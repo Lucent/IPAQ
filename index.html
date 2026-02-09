@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPAQ Physical Activity Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #1a1a2e;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #eee;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .duration-group {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .duration-group select { width: 100%; }
+    .duration-colon {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #666;
+      padding-bottom: 0.1rem;
+    }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label {
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 0.25rem;
+    }
+    input, select {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #4a6cf7;
+    }
+    .activity-section {
+      background: #fafbfc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .activity-section:last-child { margin-bottom: 0; }
+    .activity-header {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+    .activity-header.walking { color: #10b981; }
+    .activity-header.moderate { color: #f59e0b; }
+    .activity-header.vigorous { color: #ef4444; }
+    .activity-header.sitting { color: #6b7280; }
+    .result-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .result-cell {
+      text-align: center;
+      padding: 0.75rem 0.5rem;
+      border-radius: 6px;
+    }
+    .result-cell.header {
+      font-size: 0.75rem;
+      color: #666;
+      font-weight: 500;
+    }
+    .result-cell.walking-bg { background: #d1fae5; }
+    .result-cell.moderate-bg { background: #fef3c7; }
+    .result-cell.vigorous-bg { background: #fee2e2; }
+    .result-cell.total-bg { background: #e0e7ff; font-weight: 600; }
+    .result-cell .value {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .result-cell .unit {
+      font-size: 0.7rem;
+      color: #666;
+    }
+    .level-badge {
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+    }
+    .level-low { background: #fee2e2; color: #dc2626; }
+    .level-moderate { background: #fef3c7; color: #d97706; }
+    .level-high { background: #d1fae5; color: #059669; }
+    .comment-box {
+      background: #f8fafc;
+      border-left: 3px solid #4a6cf7;
+      padding: 1rem;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-top: 1rem;
+    }
+    .sitting-display {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #4a6cf7;
+    }
+    .sitting-display span { font-weight: 400; font-size: 0.9rem; color: #666; }
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>International Physical Activity Questionnaire</h1>
+    <p class="subtitle">For use with young and middle-aged adults (15-69 years)</p>
+
+    <div class="card">
+      <div class="card-title">Personal Information</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name and Surname</label>
+          <input type="text" id="name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label>Age (years)</label>
+          <input type="number" id="age" min="15" max="69" placeholder="15-69">
+        </div>
+        <div class="form-group">
+          <label>Weight (kg)</label>
+          <input type="number" id="weight" min="30" max="200" placeholder="30-200">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Physical Activity (Last 7 Days)</div>
+
+      <div class="activity-section">
+        <div class="activity-header vigorous">Vigorous Physical Activities</div>
+        <p style="font-size:0.8rem;color:#666;margin-bottom:0.75rem">Heavy lifting, digging, aerobics, fast bicycling</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Days per week</label>
+            <select id="vigorousDays"></select>
+          </div>
+          <div class="form-group">
+            <label>Time per day (h:m)</label>
+            <div class="duration-group">
+              <select id="vigorousHours"></select>
+              <span class="duration-colon">:</span>
+              <select id="vigorousMinutes"></select>
+            </div>
+          </div>
+          <div class="form-group"></div>
+        </div>
+      </div>
+
+      <div class="activity-section">
+        <div class="activity-header moderate">Moderate Physical Activities</div>
+        <p style="font-size:0.8rem;color:#666;margin-bottom:0.75rem">Carrying light loads, bicycling at regular pace, doubles tennis</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Days per week</label>
+            <select id="moderateDays"></select>
+          </div>
+          <div class="form-group">
+            <label>Time per day (h:m)</label>
+            <div class="duration-group">
+              <select id="moderateHours"></select>
+              <span class="duration-colon">:</span>
+              <select id="moderateMinutes"></select>
+            </div>
+          </div>
+          <div class="form-group"></div>
+        </div>
+      </div>
+
+      <div class="activity-section">
+        <div class="activity-header walking">Walking</div>
+        <p style="font-size:0.8rem;color:#666;margin-bottom:0.75rem">At work, home, travel, recreation, sport, exercise, or leisure</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Days per week</label>
+            <select id="walkingDays"></select>
+          </div>
+          <div class="form-group">
+            <label>Time per day (h:m)</label>
+            <div class="duration-group">
+              <select id="walkingHours"></select>
+              <span class="duration-colon">:</span>
+              <select id="walkingMinutes"></select>
+            </div>
+          </div>
+          <div class="form-group"></div>
+        </div>
+      </div>
+
+      <div class="activity-section">
+        <div class="activity-header sitting">Sitting Time (Weekdays)</div>
+        <p style="font-size:0.8rem;color:#666;margin-bottom:0.75rem">At desk, visiting friends, reading, watching TV</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Time per day (h:m)</label>
+            <div class="duration-group">
+              <select id="sittingHours"></select>
+              <span class="duration-colon">:</span>
+              <select id="sittingMinutes"></select>
+            </div>
+          </div>
+          <div class="form-group"></div>
+          <div class="form-group"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Results</div>
+      <div class="result-grid">
+        <div class="result-cell header"></div>
+        <div class="result-cell header">MET-min/week</div>
+        <div class="result-cell header">Kcal/week</div>
+
+        <div class="result-cell walking-bg">Walking</div>
+        <div class="result-cell walking-bg"><span class="value" id="walkingMET">0</span></div>
+        <div class="result-cell walking-bg"><span class="value" id="walkingKcal">0</span></div>
+
+        <div class="result-cell moderate-bg">Moderate</div>
+        <div class="result-cell moderate-bg"><span class="value" id="moderateMET">0</span></div>
+        <div class="result-cell moderate-bg"><span class="value" id="moderateKcal">0</span></div>
+
+        <div class="result-cell vigorous-bg">Vigorous</div>
+        <div class="result-cell vigorous-bg"><span class="value" id="vigorousMET">0</span></div>
+        <div class="result-cell vigorous-bg"><span class="value" id="vigorousKcal">0</span></div>
+
+        <div class="result-cell total-bg">Total</div>
+        <div class="result-cell total-bg"><span class="value" id="totalMET">0</span></div>
+        <div class="result-cell total-bg"><span class="value" id="totalKcal">0</span></div>
+      </div>
+
+      <div style="text-align:center;margin:1.5rem 0">
+        <div style="font-size:0.8rem;color:#666;margin-bottom:0.5rem">Physical Activity Level</div>
+        <span class="level-badge level-low" id="levelBadge">LOW</span>
+      </div>
+
+      <div style="margin-top:1.5rem">
+        <div style="font-size:0.8rem;color:#666;margin-bottom:0.5rem">Daily Sedentary Time</div>
+        <div class="sitting-display">
+          <span id="sittingDisplay">0</span> hours <span id="sittingMinDisplay">0</span> minutes <span>per day</span>
+        </div>
+      </div>
+
+      <div class="comment-box" id="commentBox">
+        Enter your physical activity data above to receive personalized recommendations.
+      </div>
+    </div>
+
+    <p style="font-size:0.75rem;color:#999;text-align:center;margin-top:1rem">
+      Based on the IPAQ scoring protocol. This report does not constitute diagnosis.<br>
+      Consult your physician before starting a physical exercise program.
+    </p>
+  </div>
+
+  <script>
+    // Populate dropdowns
+    const populateSelect = (id, max, step = 1, values = null) => {
+      const sel = document.getElementById(id);
+      if (values) {
+        values.forEach(v => sel.add(new Option(v, v)));
+      } else {
+        for (let i = 0; i <= max; i += step) sel.add(new Option(i, i));
+      }
+    };
+
+    // Days: 0-7, Hours: 0-16, Minutes: 0,10,15,20...55
+    const minuteOptions = [0, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+    populateSelect('vigorousDays', 7);
+    populateSelect('vigorousHours', 16);
+    populateSelect('vigorousMinutes', 0, 0, minuteOptions);
+
+    populateSelect('moderateDays', 7);
+    populateSelect('moderateHours', 16);
+    populateSelect('moderateMinutes', 0, 0, minuteOptions);
+
+    populateSelect('walkingDays', 7);
+    populateSelect('walkingHours', 16);
+    populateSelect('walkingMinutes', 0, 0, minuteOptions);
+
+    populateSelect('sittingHours', 16);
+    populateSelect('sittingMinutes', 0, 0, minuteOptions);
+
+    // Comments based on activity level and sedentary time
+    const comments = {
+      low_high_sed: "Your physical activity level must definitely be improved. Your low/absent daily moderate to vigorous intensity physical activity and your high daily sedentary time will have negative effects on your current and future health. What you ideally need to do is reduce your daily sedentary time to below 4 hours, and increase your moderate to vigorous intensity physical activity time, according to your health status. If it is not possible for you to reduce your daily sedentary hours for work or personal reasons, you should devote 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that your high sedentary time will have on your current and future health.",
+      low_med_sed: "Your physical activity level must definitely be improved. Your low/absent daily moderate to vigorous intensity physical activity and your medium/high daily sedentary time will have negative effects on your current and future health. What you ideally need to do is reduce your daily sedentary time to below 4 hours, and increase your moderate to vigorous intensity physical activity time, according to your health status. If it is not possible for you to reduce your daily sedentary hours for work or personal reasons, you should devote 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that your high sedentary time will have on your current and future health.",
+      low_low_sed: "Your physical activity level must be improved. Although your daily sedentary time is low, at less than 4 hours, the low/absent daily moderate to vigorous intensity physical activity will have negative effects on your current and future health. According to your health status, you should devote 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activities.",
+      med_high_sed: "Your physical activity level must be improved. Your low daily moderate to vigorous intensity physical activity and your high daily sedentary time will have negative effects on your current and future health. What you ideally need to do is reduce your daily sedentary time to below 4 hours, and increase your moderate to vigorous intensity physical activity time, according to your health status. If it is not possible for you to reduce your daily sedentary hours for work or personal reasons, you should devote from 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that your high sedentary time will have on your current and future health.",
+      med_med_sed: "Your physical activity level must be improved. Your low daily moderate to vigorous intensity physical activity and your medium/high daily sedentary time will have negative effects on your current and future health. What you ideally need to do is reduce your daily sedentary time to below 4 hours, and increase your moderate to vigorous intensity physical activity time, according to your health status. If it is not possible for you to reduce your daily sedentary hours for work or personal reasons, you should devote from 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that your high sedentary time will have on your current and future health.",
+      med_low_sed: "Your physical activity level must be improved. Although your daily sedentary time is low, at less or equal than 4 hours, your low daily moderate to vigorous intensity physical activity will have negative effects on your current and future health. According to your health status, you should devote from 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that your high sedentary time will have on your current and future health.",
+      good_high_sed: "Your physical activity level should be improved slightly. Your main problem is your high daily sedentary time, which will have a negative effect on your current and future health, even though your daily moderate to vigorous intensity physical activity is almost adequate. What you ideally need to do is reduce your daily sedentary time to below 4 hours, and slightly increase your moderate to vigorous intensity physical activity time, according to your health status. If it is not possible for you to reduce your daily sedentary hours for work or personal reasons, you should devote from 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that your high sedentary time will have on your current and future health.",
+      good_med_sed: "Your physical activity level is adequate, both in terms of its quality and quantity. Both your time dedicated to moderate to vigorous intensity physical activity and your daily sedentary time are almost ideal. Your daily sedentary time should remain below 4 hours. If this is not possible, you should devote from 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that a high sedentary time will have on your current and future health.",
+      good_low_sed: "Your physical activity level is adequate, both in terms of its quality and quantity. Both your time dedicated to moderate to vigorous intensity physical activity and your daily sedentary time are almost ideal. You should devote from 60 to 75 minutes daily to moderate intensity physical activity, or 30 to 35 minutes daily to vigorous physical activity, or 45 to 55 minutes daily to mixed intensity moderate to vigorous physical activity, to cancel out the negative effects that a high sedentary time will have on your current and future health.",
+      high_high_sed: "Your physical activity level is optimal despite your high daily sedentary time, thanks to the high number of hours that you devote to moderate to vigorous intensity physical activity.",
+      excellent: "Your physical activity level is excellent. You have a low daily sedentary time, and you devote a high number of hours to moderate to vigorous intensity physical activity."
+    };
+
+    const calculate = () => {
+      const weight = parseFloat(document.getElementById('weight').value) || 0;
+
+      const vigorousDays = parseInt(document.getElementById('vigorousDays').value) || 0;
+      const vigorousHours = parseInt(document.getElementById('vigorousHours').value) || 0;
+      const vigorousMinutes = parseInt(document.getElementById('vigorousMinutes').value) || 0;
+
+      const moderateDays = parseInt(document.getElementById('moderateDays').value) || 0;
+      const moderateHours = parseInt(document.getElementById('moderateHours').value) || 0;
+      const moderateMinutes = parseInt(document.getElementById('moderateMinutes').value) || 0;
+
+      const walkingDays = parseInt(document.getElementById('walkingDays').value) || 0;
+      const walkingHours = parseInt(document.getElementById('walkingHours').value) || 0;
+      const walkingMinutes = parseInt(document.getElementById('walkingMinutes').value) || 0;
+
+      const sittingHours = parseInt(document.getElementById('sittingHours').value) || 0;
+      const sittingMinutes = parseInt(document.getElementById('sittingMinutes').value) || 0;
+
+      // MET calculations
+      const walkingMET = 3.3 * ((walkingHours * 60) + walkingMinutes) * walkingDays;
+      const moderateMET = 4 * ((moderateHours * 60) + moderateMinutes) * moderateDays;
+      const vigorousMET = 8 * ((vigorousHours * 60) + vigorousMinutes) * vigorousDays;
+      const totalMET = walkingMET + moderateMET + vigorousMET;
+
+      // Kcal calculations
+      const walkingKcal = walkingMET * 3.5 * (weight / 200);
+      const moderateKcal = moderateMET * 3.5 * (weight / 200);
+      const vigorousKcal = vigorousMET * 3.5 * (weight / 200);
+      const totalKcal = walkingKcal + moderateKcal + vigorousKcal;
+
+      // Update display
+      document.getElementById('walkingMET').textContent = Math.round(walkingMET);
+      document.getElementById('moderateMET').textContent = Math.round(moderateMET);
+      document.getElementById('vigorousMET').textContent = Math.round(vigorousMET);
+      document.getElementById('totalMET').textContent = Math.round(totalMET);
+
+      document.getElementById('walkingKcal').textContent = Math.round(walkingKcal);
+      document.getElementById('moderateKcal').textContent = Math.round(moderateKcal);
+      document.getElementById('vigorousKcal').textContent = Math.round(vigorousKcal);
+      document.getElementById('totalKcal').textContent = Math.round(totalKcal);
+
+      // Sitting display
+      document.getElementById('sittingDisplay').textContent = sittingHours;
+      document.getElementById('sittingMinDisplay').textContent = sittingMinutes;
+
+      // Activity level classification
+      const totalDays = vigorousDays + moderateDays + walkingDays;
+      const vigorousMinutesWeek = (vigorousHours * 60 + vigorousMinutes) * vigorousDays;
+      const moderatePlusWalkingDays = moderateDays + walkingDays;
+      const moderatePlusWalkingMinutes = ((moderateHours * 60 + moderateMinutes) * moderateDays) +
+                                          ((walkingHours * 60 + walkingMinutes) * walkingDays);
+
+      let level = 'LOW';
+      if ((totalDays >= 7 && totalMET >= 3000) || (vigorousDays >= 3 && totalMET >= 1500)) {
+        level = 'HIGH';
+      } else if ((totalDays >= 5 && totalMET >= 600) ||
+                 (vigorousDays >= 3 && vigorousMinutesWeek >= 20) ||
+                 (moderatePlusWalkingDays >= 5 && moderatePlusWalkingMinutes >= 150)) {
+        level = 'MODERATE';
+      }
+
+      const badge = document.getElementById('levelBadge');
+      badge.textContent = level;
+      badge.className = 'level-badge level-' + level.toLowerCase();
+
+      // Comment based on activity hours and sedentary time
+      const activityHours = totalMET / 60;
+      const sittingTotal = sittingHours + (sittingMinutes / 60);
+      let comment = '';
+
+      if (activityHours <= 2.5) {
+        if (sittingTotal >= 8) comment = comments.low_high_sed;
+        else if (sittingTotal > 4) comment = comments.low_med_sed;
+        else comment = comments.low_low_sed;
+      } else if (activityHours <= 16) {
+        if (sittingTotal >= 8) comment = comments.med_high_sed;
+        else if (sittingTotal > 4) comment = comments.med_med_sed;
+        else comment = comments.med_low_sed;
+      } else if (activityHours <= 35.5) {
+        if (sittingTotal >= 8) comment = comments.good_high_sed;
+        else if (sittingTotal > 4) comment = comments.good_med_sed;
+        else comment = comments.good_low_sed;
+      } else {
+        if (sittingTotal >= 8) comment = comments.high_high_sed;
+        else if (sittingTotal > 4) comment = comments.high_high_sed;
+        else comment = comments.excellent;
+      }
+
+      document.getElementById('commentBox').textContent = comment;
+    };
+
+    // Attach event listeners to all inputs
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', calculate);
+      el.addEventListener('change', calculate);
+    });
+
+    // Initial calculation
+    calculate();
+  </script>
+</body>
+</html>
